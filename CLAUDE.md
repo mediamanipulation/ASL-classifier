@@ -41,7 +41,7 @@ app/
     data/dataset.py         # ASLDataset + get_transforms()
     utils/metrics.py        # evaluate_model(), compute_accuracy()
     utils/logging.py        # Logging utilities
-  input/train|valid|test/   # Dataset (ImageFolder format, ~70 images/class)
+  input/train|valid|test/   # Dataset (ImageFolder format, 70-100 images/class)
   checkpoints/              # Model checkpoints (.pth)
   experiments/              # Training logs, TensorBoard, confusion matrices
 ```
@@ -70,18 +70,38 @@ Checkpoints save a dict with keys: `model_state_dict`, `optimizer_state_dict`, `
 
 ## Training Configuration
 Config is in `config.yaml`. Key settings:
-- `model.freeze_backbone`: Freeze EfficientNet layers initially (two-phase training)
-- `model.unfreeze_after_epochs`: When to unfreeze backbone (uses 1/10th LR)
-- `augmentation.*`: Heavy augmentation enabled (perspective, affine, blur, erasing)
+- `model.freeze_backbone`: false (full network trains from start)
+- `model.unfreeze_after_epochs`: 0
+- `augmentation.*`: Moderate augmentation (perspective, erasing, color jitter, rotation)
 - `training.early_stopping.patience`: 7 epochs
+- `training.image_size`: 224 (EfficientNet native resolution)
+- `model.dropout_rate`: 0.2
 - `mixed_precision.enabled`: true (RTX 4090)
 
+## Dataset
+- **Letters A-Z**: 100 images/class (70 original + 30 diverse from ASL Alphabet Test dataset)
+- **Digits 0-9**: 70 images/class (original dataset only)
+- Diverse letter images sourced from Kaggle ASL Alphabet Test (CC0, varied backgrounds/skin tones)
+- External digit datasets were tested but rejected (Turkish SL mislabeled as ASL, or black-background-only causing domain mismatch)
+
+## Performance
+- **Test accuracy**: 99.96%
+- **Real-world letters**: 96-100% confidence
+- **Real-world digits**: 62-87% confidence (limited by training data diversity)
+- **Real-world benchmark (ASL Alphabet Test)**: 100% accuracy, 99.9% avg confidence
+
 ## Git
-- `main` branch: baseline code
+- `main` branch: stable, production-ready
 - Feature branches for changes (e.g., `feature/improve-generalization`)
 - Do not commit .pth, .keras, .pkl, images, or log files (gitignored)
 
 ## Known Issues
 - Old TensorFlow was removed (conflicted with NumPy 2.x) — do not reinstall it
-- Dataset is small (~70 images/class) and homogeneous — real-world accuracy gap exists
+- Digit classes lack diverse training data — no reliable ASL digit dataset found online
 - `marker-pdf` has a numpy<2 constraint warning (ignorable, not used by this project)
+
+## Lessons Learned
+- **Data diversity > model tuning**: Adding 30 diverse images/class improved real-world accuracy from 11% to 100%
+- **Dataset visual style matters**: Mixing black-background crops with natural photos hurts performance
+- **Most "ASL digit" datasets on Kaggle are mislabeled** (Turkish SL or generic finger counting)
+- **ImageNet normalization is critical** for pretrained EfficientNet inference

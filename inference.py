@@ -61,7 +61,7 @@ def load_model(checkpoint_path, class_names, device):
     return model
 
 
-def preprocess_image(image_path, image_size=128):
+def preprocess_image(image_path, image_size=224):
     """Load and preprocess image"""
     transform = transforms.Compose([
         transforms.Resize((image_size, image_size)),

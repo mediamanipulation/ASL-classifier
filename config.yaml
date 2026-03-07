@@ -11,7 +11,7 @@ data:
   train_dir: "./input/train"
   valid_dir: "./input/valid"
   test_dir: "./input/test"
-  image_size: 128
+  image_size: 224
   num_workers: 4
   pin_memory: true
 
@@ -19,30 +19,30 @@ data:
 augmentation:
   enabled: true
   horizontal_flip: true
-  rotation_degrees: 15
+  rotation_degrees: 10
   color_jitter:
-    brightness: 0.4
-    contrast: 0.4
-    saturation: 0.3
-    hue: 0.15
-  # Advanced augmentation for better generalization
+    brightness: 0.3
+    contrast: 0.3
+    saturation: 0.2
+    hue: 0.1
+  # Advanced augmentation (moderated)
   random_perspective: true
-  random_affine: true
-  gaussian_blur: true
+  random_affine: false
+  gaussian_blur: false
   random_erasing: true
 
 # Model settings
 model:
   architecture: "efficientnet_b0"  # timm model name
   pretrained: true
-  dropout_rate: 0.4
-  freeze_backbone: true          # Freeze pretrained layers initially
-  unfreeze_after_epochs: 5       # Unfreeze backbone after N epochs for fine-tuning
+  dropout_rate: 0.2
+  freeze_backbone: false          # Let full network train from the start
+  unfreeze_after_epochs: 0
 
 # Training settings
 training:
   batch_size: 64
-  num_epochs: 25
+  num_epochs: 40
   learning_rate: 0.0005
   weight_decay: 0.0001
 
@@ -79,4 +79,4 @@ logging:
 
 # Mixed precision training (faster on modern GPUs)
 mixed_precision:
-  enabled: false  # Set to true if your GPU supports it (recommended)
+  enabled: true  # RTX 4090 - excellent FP16/BF16 support
