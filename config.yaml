@@ -19,18 +19,25 @@ data:
 augmentation:
   enabled: true
   horizontal_flip: true
-  rotation_degrees: 10
+  rotation_degrees: 15
   color_jitter:
-    brightness: 0.2
-    contrast: 0.2
-    saturation: 0.2
-    hue: 0.1
+    brightness: 0.4
+    contrast: 0.4
+    saturation: 0.3
+    hue: 0.15
+  # Advanced augmentation for better generalization
+  random_perspective: true
+  random_affine: true
+  gaussian_blur: true
+  random_erasing: true
 
 # Model settings
 model:
   architecture: "efficientnet_b0"  # timm model name
   pretrained: true
   dropout_rate: 0.4
+  freeze_backbone: true          # Freeze pretrained layers initially
+  unfreeze_after_epochs: 5       # Unfreeze backbone after N epochs for fine-tuning
 
 # Training settings
 training:
@@ -52,7 +59,7 @@ training:
   # Early stopping
   early_stopping:
     enabled: true
-    patience: 4
+    patience: 7
     min_delta: 0.0001
 
 # Evaluation settings

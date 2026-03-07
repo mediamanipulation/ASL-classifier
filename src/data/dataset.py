@@ -43,12 +43,18 @@ def get_transforms(image_size=128, is_training=True, augmentation_config=None):
     Returns:
         torchvision.transforms.Compose: Composed transforms
     """
+    # ImageNet normalization (matches EfficientNet pretrained expectations)
+    imagenet_normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+
     if is_training and augmentation_config and augmentation_config.get('enabled', False):
         transform_list = [
-            transforms.Resize((image_size, image_size)),
+            transforms.Resize((image_size + 16, image_size + 16)),
+            transforms.RandomCrop(image_size),
         ]
 
-        # Add augmentations
         if augmentation_config.get('horizontal_flip', False):
             transform_list.append(transforms.RandomHorizontalFlip())
 
@@ -62,12 +68,32 @@ def get_transforms(image_size=128, is_training=True, augmentation_config=None):
                 transforms.ColorJitter(**augmentation_config['color_jitter'])
             )
 
-        transform_list.append(transforms.ToTensor())
+        if augmentation_config.get('random_perspective', False):
+            transform_list.append(
+                transforms.RandomPerspective(distortion_scale=0.2, p=0.3)
+            )
+
+        if augmentation_config.get('random_affine', False):
+            transform_list.append(
+                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1))
+            )
+
+        if augmentation_config.get('gaussian_blur', False):
+            transform_list.append(
+                transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))
+            )
+
+        transform_list.extend([transforms.ToTensor(), imagenet_normalize])
+
+        if augmentation_config.get('random_erasing', False):
+            transform_list.append(
+                transforms.RandomErasing(p=0.2, scale=(0.02, 0.15))
+            )
     else:
-        # Validation/test transforms - no augmentation
         transform_list = [
             transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
+            imagenet_normalize,
         ]
 
     return transforms.Compose(transform_list)

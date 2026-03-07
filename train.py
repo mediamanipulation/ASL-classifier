@@ -105,18 +105,50 @@ def get_transforms(config, is_training=True):
     """Create data transforms based on config"""
     img_size = config['data']['image_size']
 
+    # ImageNet normalization (matches EfficientNet pretrained expectations)
+    imagenet_normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+
     if is_training and config['augmentation']['enabled']:
         transform_list = [
-            transforms.Resize((img_size, img_size)),
+            transforms.Resize((img_size + 16, img_size + 16)),
+            transforms.RandomCrop(img_size),
             transforms.RandomHorizontalFlip() if config['augmentation']['horizontal_flip'] else None,
             transforms.RandomRotation(config['augmentation']['rotation_degrees']),
             transforms.ColorJitter(**config['augmentation']['color_jitter']),
-            transforms.ToTensor(),
         ]
+
+        # Advanced augmentation (if configured)
+        aug_config = config.get('augmentation', {})
+        if aug_config.get('random_perspective', False):
+            transform_list.append(
+                transforms.RandomPerspective(distortion_scale=0.2, p=0.3)
+            )
+        if aug_config.get('random_affine', False):
+            transform_list.append(
+                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1))
+            )
+        if aug_config.get('gaussian_blur', False):
+            transform_list.append(
+                transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))
+            )
+
+        transform_list.extend([
+            transforms.ToTensor(),
+            imagenet_normalize,
+        ])
+
+        if aug_config.get('random_erasing', False):
+            transform_list.append(
+                transforms.RandomErasing(p=0.2, scale=(0.02, 0.15))
+            )
     else:
         transform_list = [
             transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
+            imagenet_normalize,
         ]
 
     # Filter out None values
@@ -352,6 +384,14 @@ def train_model(config, logger):
     logger.info(f"Model: {config['model']['architecture']}")
     logger.info(f"Number of parameters: {sum(p.numel() for p in model.parameters()):,}")
 
+    # Freeze backbone layers if configured
+    freeze_backbone = config['model'].get('freeze_backbone', False)
+    if freeze_backbone:
+        for param in model.base_model.parameters():
+            param.requires_grad = False
+        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        logger.info(f"Backbone frozen. Trainable parameters: {trainable:,}")
+
     # Loss, optimizer, scheduler
     criterion = nn.CrossEntropyLoss()
     optimizer = get_optimizer(model, config)
@@ -369,9 +409,23 @@ def train_model(config, logger):
 
     logger.info("Starting training...")
 
+    unfreeze_after = config['model'].get('unfreeze_after_epochs', 0)
+
     for epoch in range(config['training']['num_epochs']):
         logger.info(f"\nEpoch {epoch+1}/{config['training']['num_epochs']}")
         logger.info("-" * 50)
+
+        # Unfreeze backbone after N epochs for fine-tuning
+        if freeze_backbone and unfreeze_after > 0 and epoch == unfreeze_after:
+            for param in model.base_model.parameters():
+                param.requires_grad = True
+            # Rebuild optimizer with all parameters and lower LR
+            unfreeze_lr = config['training']['learning_rate'] * 0.1
+            optimizer = get_optimizer(model, config)
+            for pg in optimizer.param_groups:
+                pg['lr'] = unfreeze_lr
+            scheduler = get_scheduler(optimizer, config)
+            logger.info(f"Backbone unfrozen at epoch {epoch+1}, LR set to {unfreeze_lr:.6f}")
 
         # Train
         train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device, scaler)
