@@ -115,6 +115,8 @@ runs/
 logs/
 tb_logs/
 tensorboard_logs/
+experiments/
+*.tfevents*
 
 # Weights & Biases
 wandb/
@@ -166,3 +168,10 @@ $RECYCLE.BIN/
 .tmp/
 temp/
 tmp/
+
+# Claude Code local settings
+.claude/
+
+# Vite cache
+.vite/
+fallacy/.vite/
