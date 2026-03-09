@@ -175,6 +175,9 @@ app/
 - [EfficientNet](https://arxiv.org/abs/1905.11946) — Tan & Le, 2019
 - [ASL Alphabet](https://www.kaggle.com/datasets/grassknoted/asl-alphabet) — Original training dataset
 - [ASL Alphabet Test](https://www.kaggle.com/datasets/danrasband/asl-alphabet-test) — Diverse validation images (CC0)
+- Big shout out to Rob Mulla for this code and instruction, I used to adapt for the ASL classifier 
+-  Build Your First Pytorch Model In Minutes! [Tutorial + Code](https://www.youtube.com/watch?v=tHL5STNJKag&t=269s)
+- this is the link to his youtube channel (556) Rob Mulla -[youtube channel](https://www.youtube.com/@robmulla) 
 
 ## License
 
