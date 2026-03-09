@@ -168,7 +168,7 @@ app/
 - PyTorch 2.4+ with CUDA
 - NVIDIA GPU recommended (trained on RTX 4090, works on any CUDA GPU)
 - ~2GB disk for dataset, ~50MB for model checkpoint
-- article code [github ASL-classifier](https://github.com/mediamanipulation/ASL-classifier)
+
 ## Acknowledgments
 
 - [TIMM](https://github.com/huggingface/pytorch-image-models) — PyTorch Image Models
